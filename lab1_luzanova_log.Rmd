@@ -1,0 +1,327 @@
+---
+title: "DATA PREPARATION"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+  html_document: default
+---
+
+# Download data
+```{r warning: FALSE}
+#Set Working Directory
+#setwd("D:/luzanova")
+#OR Choose your Directory in 'Files' and click on 'More' -> 'Set as Working Directory' 
+#Download file to the table. Source file is 'flats.csv'
+f <- read.csv2('crime.csv', header = TRUE, encoding = 'UNICOD')
+#Connect library
+library (dplyr)
+#Have a look at the data
+glimpse(f)  
+head(f)
+```
+#Висновок: кількість спостережень – 113, кількість змінних – 21.
+
+# Visualising
+
+## Histogram
+```{r}
+library(ggplot2)
+par(mfrow = c(2, 3)) 
+hist(f$Homicide, col = 'dark blue', main = 'кількість вбивст ', xlab = 'Value')
+hist(f$Population, col = 'dark green', main = 'Кількість населення ', xlab = 'Value')
+hist(f$GDP, col = 'aquamarine', main = 'ВВП', xlab = 'Value')
+hist(f$GDP_per_capita, col = 'chocolate', main = 'ВВП на душу населення', xlab = 'Value')
+hist(f$GNI, col = 'chartreuse', main = 'ВНП', xlab = 'Value')
+hist(f$Labor_force, col = 'coral', main = 'Економічне активне населення ', xlab = 'Value')
+hist(f$Unempl, col = 'blue', main = 'Рівень безробіття', xlab = 'Value')
+hist(f$Agri_fore_fish_GDP, col = 'burlywood', main = 'Дохід від с/г, лісного та рибного господарства', xlab = 'Value')
+hist(f$Life_expect, col = 'darkmagenta', main = 'Ймовірна тривалість життя', xlab = 'Value')
+hist(f$Death_rate, col = 'darkorange', main = 'Рівень смертності ', xlab = 'Value')
+hist(f$Birth_rate, col = 'darkorchid1', main = 'Рівень народжувальності', xlab = 'Value')
+hist(f$Empl, col = 'firebrick', main = '% зайнятих віком від 15 років', xlab = 'Value')
+hist(f$Empl_serv, col = 'brown', main = '% зайнятих у сфері послуг ', xlab = 'Value')
+hist(f$Empl_agri, col = 'darkgoldenrod', main = '% зайнятих у сфері с/г ', xlab = 'Value')
+hist(f$Empl_indu, col = 'dodgerblue', main = '% зайнятих у сфері виробництва', xlab = 'Value')
+hist(f$educ_expen, col = 'gold', main = 'Держ видатки у сферу освіти ', xlab = 'Value')
+hist(f$Mil_expen, col = 'darkslategray', main = 'Держ видатки у сферу збройних сил', xlab = 'Value')
+hist(f$Arm_forc_person, col = 'lightsalmon', main = 'Кільксть воєнослужбовців', xlab = 'Value')
+
+```
+#Висновок: розподіл змінних Homicide, Population, GDP, GNI, Labor_force, Agri_fore_fish_GDP, educ_expen, Mil_expen, Arm_forc_person мають довгий хвіст.
+
+#проведемо логарифмування даних
+#как логарифмировать, если у значение 0
+```{r}
+f_log <- f
+f_log$Homicide <- log(f$Homicide, )
+f_log$Population <- log(f$Population, )
+f_log$GDP <- log(f$GDP, )
+f_log$GDP_per_capita <- log(f$GDP_per_capita, )
+f_log$GNI <- log(f$GNI, )
+f_log$Labor_force <- log(f$Labor_force, )
+f_log$Unempl <- log(f$Unempl, )
+f_log$Agri_fore_fish_GDP<- log(f$Agri_fore_fish_GDP, )
+f_log$Life_expect <- log(f$Life_expect, )
+f_log$Death_rate <- log(f$Death_rate )
+f_log$Birth_rate <- log(f$Birth_rate, )
+f_log$Empl <- log(f$Empl, )
+f_log$Empl_serv <- log(f$Empl_serv, )
+f_log$Empl_agri <- log(f$Empl_agri, )
+f_log$Empl_indu <- log(f$Empl_indu, )
+f_log$educ_expen <- log(f$educ_expen, )
+f_log$Mil_expen <- log(f$Mil_expen, )
+f_log$Arm_forc_person <- log(f$Arm_forc_person, )
+
+head(f_log)
+f<- f_log 
+```
+
+```{r}
+par(mfrow = c(2, 3)) 
+hist(f$Homicide, col = 'dark blue', main = 'кількість вбивст ', xlab = 'Value')
+hist(f$Population, col = 'dark green', main = 'Кількість населення ', xlab = 'Value')
+hist(f$GDP, col = 'aquamarine', main = 'ВВП', xlab = 'Value')
+hist(f$GDP_per_capita, col = 'chocolate', main = 'ВВП на душу населення', xlab = 'Value')
+hist(f$GNI, col = 'chartreuse', main = 'ВНП', xlab = 'Value')
+hist(f$Labor_force, col = 'coral', main = 'Економічне активне населення ', xlab = 'Value')
+hist(f$Unempl, col = 'blue', main = 'Рівень безробіття', xlab = 'Value')
+hist(f$Agri_fore_fish_GDP, col = 'burlywood', main = 'Дохід від с/г, лісного та рибного господарства', xlab = 'Value')
+hist(f$Life_expect, col = 'darkmagenta', main = 'Ймовірна тривалість життя', xlab = 'Value')
+hist(f$Death_rate, col = 'darkorange', main = 'Рівень смертності ', xlab = 'Value')
+hist(f$Birth_rate, col = 'darkorchid1', main = 'Рівень народжувальності', xlab = 'Value')
+hist(f$Empl, col = 'firebrick', main = '% зайнятих віком від 15 років', xlab = 'Value')
+hist(f$Empl_serv, col = 'brown', main = '% зайнятих у сфері послуг ', xlab = 'Value')
+hist(f$Empl_agri, col = 'darkgoldenrod', main = '% зайнятих у сфері с/г ', xlab = 'Value')
+hist(f$Empl_indu, col = 'dodgerblue', main = '% зайнятих у сфері виробництва', xlab = 'Value')
+hist(f$educ_expen, col = 'gold', main = 'Держ видатки у сферу освіти ', xlab = 'Value')
+hist(f$Mil_expen, col = 'darkslategray', main = 'Держ видатки у сферу збройних сил', xlab = 'Value')
+hist(f$Arm_forc_person, col = 'lightsalmon', main = 'Кільксть воєнослужбовців', xlab = 'Value')
+
+```
+## Box-plot
+```{r}
+par(mfrow = c(1, 3))
+boxplot(f$Homicide)
+boxplot(f$Population)
+boxplot(f$GDP)
+boxplot(f$GDP_per_capita)
+boxplot(f$GNI)
+boxplot(f$Labor_force)
+boxplot(f$Unempl)
+boxplot(f$Agri_fore_fish_GDP)
+boxplot(f$Life_expect)
+boxplot(f$Death_rate)
+boxplot(f$Birth_rate)
+boxplot(f$Empl)
+boxplot(f$Empl_serv)
+boxplot(f$Empl_agri)
+boxplot(f$Empl_indu)
+boxplot(f$educ_expen)
+boxplot(f$Mil_expen)
+boxplot(f$Arm_forc_person)
+```
+#Висновок: всі змінні мають викиди, окрім GDP, GDP_per_capita, GNI, Birth_rate, educ_expen, Arm_forc_person
+
+## Violin
+```{r}
+qplot(data = read.csv2('crime.csv', header = TRUE, encoding = 'UNICOD'), 
+      x = Region, 
+      y = Homicide, 
+      geom = "violin")
+qplot(data = f, 
+      x = Region, 
+      y = Homicide, 
+      geom = "violin")
+```
+#Висновок: більшість нетипових значень змінної Homicide належать до країн Americas Region
+
+# Statistics
+
+## Descriptive statistics
+```{r}
+library (psych)
+describe(f)
+```
+
+#Висновок: аналіз основних показників описової статистики за кожною змінною показав, що є пропущені значення в усіх змінних, окрім – Homicide, Population, Region, Subregion. 
+
+## Correlations
+
+#Побудуемо кореляційну матрицю. Попередньо зробимо групування показників з додаванням показника Homicide у кожну. 1-а група - Кількість населення, Економічне активне населення, Рівень безробіття,  % зайнятих віком від 15 років, % зайнятих у сфері послуг, % зайнятих у сфері с/г, % зайнятих у сфері виробництва; 2-а група - Державні видатки у сферу збройних сил, Кільксть воєнослужбовців; 3-я група -Ймовірна тривалість життя, Рівень смертності, Рівень народжувальності; Державні видатки у сферу освіти  4-а група - ВВП, ВВП на душу населення, ВНП, Дохід від с/г, лісного та рибного господарства
+```{r}
+f1 <- c(2,3,7,8,13,14,15,16)
+c_f1 <- f[f1]
+pairs.panels(c_f1, lm=FALSE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+f2 <- c(2,18,19)
+c_f2 <- f[f2]
+pairs.panels(c_f2, lm=FALSE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+f3 <- c(2,10,11,12,17)
+c_f3 <- f[f3]
+pairs.panels(c_f3, lm=FALSE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+f4 <- c(2,4,5,6,9)
+c_f4 <- f[f4]
+pairs.panels(c_f4, lm=FALSE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+```
+#заміна lm=TRUE на lm=FALSE
+
+#Змінні, що мають незначний вплив на Homicide (з рівнем менш за 0,05) та ті, що корелюють між собою рекомендовано не вкдючати до подальшого аналізу (GDP_per_capita, GNI, Labor_force, Empl)
+
+```{r}
+f <- f[ ,-c(5,6,7,13)]
+head(f)
+```
+
+
+```{r}
+f5 <- c( 2:17)
+c_f5 <- f[f5]
+pairs.panels(c_f5, lm=FALSE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+```
+#Тісний зв'язок виявлено між змінними Кількість населення та Дохід від с/г, лісного та рибного господарства; Кількість населення та кількості воєнослужбовців; Державні видатки у сферу освіти та ВВП. Рекомендовано, в моделі залишити усі змінні.
+
+# Missing data
+
+## Delete N/A (not recommended strategy) 
+```{r}
+f_reduce <- tidyr::drop_na(f)
+cat('there are',nrow(f_reduce),'rows in the f_reduce')
+```
+#Після видалення пропущених значень в базі залишилося би 88 рядок.
+
+## Fill n/a 
+```{r}
+#1 with neighboring values
+f_fill1 <- tidyr::fill(f, Population,GDP,Unempl,Agri_fore_fish_GDP,Life_expect,Death_rate,Birth_rate,Empl_serv,Empl_agri,Empl_indu,educ_expen,Mil_expen,Arm_forc_person, .direction = 'down')  
+
+head(f_fill1)
+```
+
+
+```{r}
+#2 with average or the most frequent
+f_fill2 <- f
+##with average for integer vars 
+f_fill2$Population <- ifelse(is.na(f$Population),round(mean(f$Population,na.rm = TRUE)),f$Population)
+f_fill2$GDP <- ifelse(is.na(f$GDP),round(mean(f$GDP,na.rm = TRUE)),f$GDP)
+f_fill2$Unempl <- ifelse(is.na(f$Unempl),round(mean(f$Unempl,na.rm = TRUE)),f$Unempl)
+f_fill2$Agri_fore_fish_GDP <- ifelse(is.na(f$Agri_fore_fish_GDP),round(mean(f$Agri_fore_fish_GDP,na.rm = TRUE)),f$Agri_fore_fish_GDP)
+f_fill2$Life_expect <- ifelse(is.na(f$Life_expect),round(mean(f$Life_expect,na.rm = TRUE)),f$Life_expect)
+f_fill2$Death_rate <- ifelse(is.na(f$Death_rate),round(mean(f$Death_rate,na.rm = TRUE)),f$Death_rate)
+f_fill2$Birth_rate <- ifelse(is.na(f$Birth_rate),round(mean(f$Birth_rate,na.rm = TRUE)),f$Birth_rate)
+f_fill2$Empl_serv <- ifelse(is.na(f$Empl_serv),round(mean(f$Empl_serv,na.rm = TRUE)),f$Empl_serv)
+f_fill2$Empl_agri <- ifelse(is.na(f$Empl_agri),round(mean(f$Empl_agri,na.rm = TRUE)),f$Empl_agri)
+f_fill2$Empl_indu <- ifelse(is.na(f$Empl_indu),round(mean(f$Empl_indu,na.rm = TRUE)),f$Empl_indu)
+f_fill2$educ_expen <- ifelse(is.na(f$educ_expen),round(mean(f$educ_expen,na.rm = TRUE)),f$educ_expen)
+f_fill2$Mil_expen <- ifelse(is.na(f$Mil_expen),round(mean(f$Mil_expen,na.rm = TRUE)),f$Mil_expen)
+f_fill2$Arm_forc_person<- ifelse(is.na(f$Arm_forc_person),round(mean(f$Arm_forc_person,na.rm = TRUE)),f$Arm_forc_person)
+
+
+head(f_fill2)
+#let's work with "filled with ave" data 
+f <- f_fill2
+```
+#Для заповнення пропусків обрано варіант заповнення середніми для кількісних змінних
+
+# Ejections (outside the three sigma)
+
+## Remove the ejections (not recommended strategy)
+```{r}
+f_ej1 <- f[f$Homicide < mean(f$Homicide)+sd(f$Homicide)*3, ]
+f_ej1 <- f[f$Population < mean(f$Population)+sd(f$Population)*3, ]
+f_ej1 <- f[f$GDP < mean(f$GDP)+sd(f$GDP)*3, ]
+f_ej1 <- f[f$Unempl < mean(f$Unempl)+sd(f$Unempl)*3, ]
+f_ej1 <- f[f$Agri_fore_fish_GDP < mean(f$Agri_fore_fish_GDP)+sd(f$Agri_fore_fish_GDP)*3, ]
+f_ej1 <- f[f$Life_expect < mean(f$Life_expect)+sd(f$Life_expect)*3, ]
+f_ej1 <- f[f$Death_rate < mean(f$Death_rate)+sd(f$Death_rate)*3, ]
+f_ej1 <- f[f$Birth_rate < mean(f$Birth_rate)+sd(f$Birth_rate)*3, ]
+f_ej1 <- f[f$Empl_serv < mean(f$Empl_serv)+sd(f$Empl_serv)*3, ]
+f_ej1 <- f[f$Empl_agri < mean(f$Empl_agri)+sd(f$Empl_agri)*3, ]
+f_ej1 <- f[f$Empl_indu < mean(f$Empl_indu)+sd(f$Empl_indu)*3, ]
+f_ej1 <- f[f$educ_expen < mean(f$educ_expen)+sd(f$educ_expen)*3, ]
+f_ej1 <- f[f$Mil_expen < mean(f$Mil_expen)+sd(f$Mil_expen)*3, ]
+f_ej1 <- f[f$Arm_forc_person < mean(f$Arm_forc_person)+sd(f$Arm_forc_person)*3, ]
+describe(f_ej1)
+```
+#Висновок: після видалення викидів  в базі залишилося би 113 рядків, тобто модель не має максимальніх викидів (можна не виконувати пункт Replace with max )
+
+## Replace with max
+```{r}
+f_ej2 <- f
+f_ej2$Homicide <- ifelse(f$Homicide < mean(f$Homicide)+sd(f$Homicide)*3,f$Homicide,mean(f$Homicide)+sd(f$Homicide)*3)
+f_ej2$Population <- ifelse(f$Population < mean(f$Population)+sd(f$Population)*3,f$Population,mean(f$Population)+sd(f$Population)*3)
+f_ej2$GDP <- ifelse(f$GDP < mean(f$GDP)+sd(f$GDP)*3,f$GDP,mean(f$GDP)+sd(f$GDP)*3)
+f_ej2$Unempl <- ifelse(f$Unempl < mean(f$Unempl)+sd(f$Unempl)*3,f$Unempl,mean(f$Unempl)+sd(f$Unempl)*3)
+f_ej2$Agri_fore_fish_GDP <- ifelse(f$Agri_fore_fish_GDP < mean(f$Agri_fore_fish_GDP)+sd(f$Agri_fore_fish_GDP)*3,f$Agri_fore_fish_GDP,mean(f$Agri_fore_fish_GDP)+sd(f$Agri_fore_fish_GDP)*3)
+f_ej2$Life_expect <- ifelse(f$Life_expect < mean(f$Life_expect)+sd(f$Life_expect)*3,f$Life_expect,mean(f$Life_expect)+sd(f$Life_expect)*3)
+f_ej2$Death_rate <- ifelse(f$Death_rate < mean(f$Death_rate)+sd(f$Death_rate)*3,f$Death_rate,mean(f$Death_rate)+sd(f$Death_rate)*3)
+f_ej2$Birth_rate <- ifelse(f$Birth_rate < mean(f$Birth_rate)+sd(f$Birth_rate)*3,f$Birth_rate,mean(f$Birth_rate)+sd(f$Birth_rate)*3)
+f_ej2$Empl_serv <- ifelse(f$Empl_serv < mean(f$Empl_serv)+sd(f$Empl_serv)*3,f$Empl_serv,mean(f$Empl_serv)+sd(f$Empl_serv)*3)
+f_ej2$Empl_agri <- ifelse(f$Empl_agri < mean(f$Empl_agri)+sd(f$Empl_agri)*3,f$Empl_agri,mean(f$Empl_agri)+sd(f$Empl_agri)*3)
+f_ej2$Empl_indu <- ifelse(f$Empl_indu < mean(f$Empl_indu)+sd(f$Empl_indu)*3,f$Empl_indu,mean(f$Empl_indu)+sd(f$Empl_indu)*3)
+f_ej2$educ_expen <- ifelse(f$educ_expen < mean(f$educ_expen)+sd(f$educ_expen)*3,f$educ_expen,mean(f$educ_expen)+sd(f$educ_expen)*3)
+f_ej2$Mil_expen <- ifelse(f$Mil_expen < mean(f$Mil_expen)+sd(f$Mil_expen)*3,f$Mil_expen,mean(f$Mil_expen)+sd(f$Mil_expen)*3)
+f_ej2$Arm_forc_person <- ifelse(f$Arm_forc_person < mean(f$Arm_forc_person)+sd(f$Arm_forc_person)*3,f$Arm_forc_person,mean(f$Arm_forc_person)+sd(f$Arm_forc_person)*3)
+
+describe(f_ej2)
+#let's work with f_eg2
+f <- f_ej2
+```
+#в моделі наявні мінімільні викиди. Було запропоновано однією обробкою замінити і максимальні, і мінімальні викиди.
+
+```{r}
+qn = quantile(f$Population, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Population = ifelse(Population < qn[1], qn[1], Population)
+                  Population = ifelse(Population > qn[2], qn[2], Population)})
+qn = quantile(f$Unempl, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Unempl= ifelse(Unempl < qn[1], qn[1], Unempl)
+                  Unempl = ifelse(Unempl > qn[2], qn[2], Unempl)})
+qn = quantile(f$Agri_fore_fish_GDP, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Agri_fore_fish_GDP= ifelse(Agri_fore_fish_GDP < qn[1], qn[1], Agri_fore_fish_GDP)
+                  Agri_fore_fish_GDP = ifelse(Agri_fore_fish_GDP > qn[2], qn[2], Agri_fore_fish_GDP)})
+qn = quantile(f$Life_expect, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Life_expect= ifelse(Life_expect < qn[1], qn[1], Life_expect)
+                  Life_expect = ifelse(Life_expect > qn[2], qn[2], Life_expect)})
+qn = quantile(f$Death_rate, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Death_rate= ifelse(Death_rate < qn[1], qn[1], Death_rate)
+                  Death_rate = ifelse(Death_rate > qn[2], qn[2], Death_rate)})
+qn = quantile(f$Empl_serv, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Empl_serv= ifelse(Empl_serv < qn[1], qn[1], Empl_serv)
+                  Empl_serv = ifelse(Empl_serv > qn[2], qn[2], Empl_serv)})
+qn = quantile(f$Empl_indu, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Empl_indu= ifelse(Empl_indu < qn[1], qn[1], Empl_indu)
+                  Empl_indu = ifelse(Empl_indu > qn[2], qn[2], Empl_indu)})
+qn = quantile(f$Mil_expen, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Mil_expen= ifelse(Mil_expen < qn[1], qn[1], Mil_expen)
+                  Mil_expen = ifelse(Mil_expen > qn[2], qn[2], Mil_expen)})
+
+describe(f)
+```
+#для корекції викидів обраний варіант заповнення граничними значеннями.
+
+# Splitting the dataset into the TRAIN set and TEST set
+```{r}
+set.seed(123)
+library(caTools)
+split = sample.split(f$Territory, SplitRatio = 0.8)
+f_train = subset(f, split == TRUE)
+f_test = subset(f, split == FALSE)
+#Write prepared data to the file
+write.csv2(f_train, file = "crime_train.csv")
+write.csv2(f_test, file = "crime_test.csv")
+```
