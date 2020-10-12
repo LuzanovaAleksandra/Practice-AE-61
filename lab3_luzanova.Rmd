@@ -1,0 +1,271 @@
+---
+title: "lab3_luzanova_ep61"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+  html_document: default
+---
+
+# Загрузимо ланні та Видалемо всі незначущі змінні, залишимо Population, Life_expect, Empl_serv.
+```{r}
+f_train <- read.csv2('crime_train.csv', header = TRUE, encoding = 'UNICOD')
+f_train <- f_train[,-c(1:2,5:7,9:10,12:18)]
+f_test <- read.csv2('crime_test.csv', header = TRUE, encoding = 'UNICOD')
+f_test <- f_test[,-c(1:2, 5:7,9:10,12:18)]
+
+head(f_train)
+head(f_test)
+```
+#Висновок: окремо завантажені навчальна і тестова вибірки.
+# Decision Tree Regression
+## Fitting
+```{r}
+library(rpart)
+model_dt <- rpart(Homicide ~ Population, f_train, control = rpart.control(minsplit = 10))
+plot(model_dt)
+text(model_dt, pos = 1, cex = 0.75, col = 1, font = 1)
+```
+#Висновок: побудовано дерево рішень, екзогенна змінна – Population.
+
+## Predicting
+```{r}
+p_dt <- predict(model_dt, f_test)
+
+train_mse_dt <- sum((f_train$Homicide-predict(model_dt, f_train))^2)/length(f_train$Homicide)
+test_mse_dt <- sum((f_test$Homicide-p_dt)^2)/length(p_dt)
+
+r2_dt <- 1-sum((f_train$Homicide - predict(model_dt, f_train))^2)/sum((f_train$Homicide - mean(f_train$Homicide))^2)
+
+r2_dt
+train_mse_dt
+test_mse_dt
+```
+#Висновок: значення середньоквадратичної похибки покращилися на навчальній вибірці – 1.51, погіршилися на тестовій вибірці – 2.187. Модель перенавчено.
+
+## Visualising
+```{r}
+library(ggplot2)
+x_grid <- seq(min(f_train$Population), max(f_train$Population), 0.01)
+ggplot() +
+  geom_point(aes(f_train$Population, f_train$Homicide),colour = 'orangered') +
+  geom_point(aes(f_test$Population, f_test$Homicide),colour = 'olivedrab4') +
+  geom_line(aes(x_grid, predict(model_dt, data.frame(Population = x_grid))),colour = 'magenta3') +
+  ggtitle('Homicide vs Population') +
+  xlab('Population') +
+  ylab('Homicide')
+```
+#Висновок: на графіку червоним позначені точки навчальної вибірки, зеленим – точки тестової вибірки, фіолетовим – модельні значення.
+
+# Random forest
+
+## Fitting
+```{r}
+
+library(randomForest)
+set.seed(1234)
+model_rf = randomForest(x = f_train['Population'],
+                         y = f_train$Homicide,
+                         ntree = 50)
+```
+
+#Висновок: побудовано віпадковий ліс із 50 дерев, екзогенна змінна – Population.
+
+## Predicting
+```{r}
+p_rf <- predict(model_rf, f_test)
+
+train_mse_rf <- sum((f_train$Homicide-predict(model_rf, f_train))^2)/length(f_train$Homicide)
+test_mse_rf <- sum((f_test$Homicide-p_rf)^2)/length(p_rf)
+r2_rf <- 1-sum((f_train$Homicide - predict(model_rf, f_train))^2)/sum((f_train$Homicide - mean(f_train$Homicide))^2)
+
+r2_rf
+train_mse_rf
+test_mse_rf
+```
+
+#Висновок: значення середньоквадратичної похибки покращилися на навчальній вибірці – 0.715, покращилися на тестовій вибірці – 2,152. Модель перенавчено.
+
+## Visualising
+```{r}
+ggplot() +
+  geom_point(aes(f_train$Population, f_train$Homicide),colour = 'orangered') +
+  geom_point(aes(f_test$Population, f_test$Homicide),colour = 'olivedrab4') +
+  geom_line(aes(x_grid, predict(model_rf, data.frame(Population = x_grid))),colour = 'magenta3') +
+  ggtitle('Homicide vs Population') +
+  xlab('Population') +
+  ylab('Homicide')
+```
+#Висновок: на графіку червоним позначені точки навчальної вибірки, зеленим – точки тестової вибірки, фіолетовим – модельні значення.
+
+#перейдемо до Нейронних мереж
+```{r}
+library(dplyr)
+library(nnet)
+library(ggplot2)
+library(knitr)
+library (psych)
+```
+#проведемо шкалювання окремо на тестовій виборці, окремо на тренувальній
+#```{r}
+#f_sc_train <- f_train
+#f_sc_train$Homicide <- scale(f_train$Homicide)
+#f_sc_train$Population <- scale(f_train$Population)
+#f_sc_train$Life_expect <- scale(f_train$Life_expect)
+#f_sc_train$Empl_serv <- scale(f_train$Empl_serv)
+#f_train<-f_sc_train 
+
+#f_sc_test <- f_test
+#f_sc_test$Homicide <- scale(f_test$Homicide)
+#f_sc_test$Population <- scale(f_test$Population)
+#f_sc_test$Life_expect <- scale(f_test$Life_expect)
+#f_sc_test$Empl_serv <- scale(f_test$Empl_serv)
+#f_test <- f_sc_test
+
+#head (f_train)
+#head (f_test)
+#```
+
+```{r}
+set.seed(333)
+ff_ap <- nnet(data = f_train, Homicide ~ Population + Life_expect + Empl_serv, linout = TRUE ,size = 12, maxit = 10000)
+library(graphics)
+source(file = 'plot.nnet.R')
+plot.nnet(ff_ap)
+```
+#Висновок: на основі змінних Population, Life_expect, Empl_serv побудовано двошарову нейронну мережу для прогнозування Homicide
+```{r}
+p_ff_ap <- predict(ff_ap, f_test)
+
+train_mse_ff_ap <- sum((f_train$Homicide-predict(ff_ap, f_train))^2)/length(f_train$Homicide)
+test_mse_ff_ap <- sum((f_test$Homicide-p_ff_ap)^2)/length(p_ff_ap)
+
+r2_ff_ap <- 1-sum((f_train$Homicide - predict(ff_ap, f_train))^2)/sum((f_train$Homicide - mean(f_train$Homicide))^2)
+
+r2_ff_ap
+
+train_mse_ff_ap
+test_mse_ff_ap
+```
+#Висновок: значення середньоквадратичної похибки на навчальній вибірці – 0.032,  на тестовій вибірці – 0.65. Модель перенавчено.
+```{r}
+library(ggplot2)
+ggplot() +
+  geom_point(aes(f_train$Population, f_train$Homicide),colour = 'red') +
+  geom_point(aes(f_test$Population, f_test$Homicide),colour = 'darkgreen') +
+  geom_line(aes(f_test$Population, p_ff_ap),colour = 'blue') +
+  ggtitle('Homicide vs Population') +
+  xlab('Population') +
+  ylab('Homicide')
+```
+#Висновок: на графіку червоним позначені точки навчальної вибірки, зеленим – точки тестової вибірки, фіолетовим – модельні значення.
+```{r}
+fit <- read.csv2('crime_fit.csv', header = TRUE, encoding = 'UNICOD')
+fit <- fit[,-c(1)]
+fit$f_test_Homicide <-f_test$Homicide
+fit$p_dt <- p_dt
+fit$p_rf <- p_rf
+fit$p_ff_ap <- p_ff_ap
+head(fit)
+write.csv2(fit, file = "crime_fit.csv")
+```
+
+```{r}
+test_mse <- read.csv2('crime_test_mse.csv', header = TRUE, encoding = 'UNICOD')
+test_mse <- test_mse[,-c(1)]
+test_mse$test_mse_dt <- test_mse_dt
+test_mse$test_mse_rf <- test_mse_rf
+test_mse$test_mse_ff_ap <- test_mse_ff_ap
+head(test_mse)
+write.csv2(test_mse, file = "crime_test_mse.csv")
+
+train_mse <- read.csv2('crime_train_mse.csv', header = TRUE, encoding = 'UNICOD')
+train_mse <- train_mse[,-c(1)]
+train_mse$train_mse_dt <- train_mse_dt
+train_mse$train_mse_rf <- train_mse_rf
+train_mse$train_mse_ff_ap <- train_mse_ff_ap
+head(train_mse)
+write.csv2(train_mse, file = "crime_train_mse.csv")
+
+r2 <- read.csv2('crime_r2.csv', header = TRUE, encoding = 'UNICOD')
+r2 <- r2[,-c(1)]
+r2$r2_dt <- r2_dt
+r2$r2_rf <- r2_rf
+r2$r2_ff_ap <- r2_ff_ap
+head(r2)
+write.csv2(r2, file = "crime_r2.csv")
+```
+
+```{r}
+f1 <- read.csv2('crime_test.csv.', header = TRUE, encoding = 'UNICOD')
+f2 <- read.csv2('crime_fit.csv', header = TRUE, encoding = 'UNICOD')
+f2 <- f2[-1]
+f <- dplyr::bind_cols(f1, f2)
+f <- f[,-1]
+f$Population <- as.factor(f$Population)
+head(f)
+```
+```{r}
+g_sr <- ggplot(f, aes(x=Homicide, y=p_sr)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point(  alpha=0.5) + labs(title="Linear Regression", x="Real Homicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none")
+
+g_mr <- ggplot(f, aes(x=Homicide, y=p_mr)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point(alpha=0.5) + labs(title="Multiple Regression", x="Real Homicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none")
+
+g_pr <- ggplot(f, aes(x=Homicide, y=p_pr)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point(alpha=0.5) + labs(title="Polynomial Regression", x="Real Homicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none") 
+
+g_dt <- ggplot(f, aes(x=Homicide, y=p_dt)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point(alpha=0.5) + labs(title="Regression Tree", x="Real AHomicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none")
+
+g_rf <- ggplot(f, aes(x=Homicide, y=p_rf)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point( alpha=0.5) + labs(title="Random Forest", x="Real Homicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none")
+
+g_ff_ap <- ggplot(f, aes(x=Homicide, y=p_ff_ap)) + 
+  geom_abline(intercept=0, slope=1) +
+  geom_point( alpha=0.5) + labs(title="NN", x="Real Homicide", y="Predicted Homicide") + 
+  theme(plot.title=element_text(size=10), axis.title.x=element_text(size=7), axis.title.y=element_text(size=7), axis.text.x=element_text(size=5), axis.text.y=element_text(size=5)) + theme(legend.position="none")
+
+gridExtra::grid.arrange(g_sr,g_mr,g_pr,g_dt,g_rf,g_ff_ap,ncol=2)
+```
+
+# Calc prediction error and visualize it (хоча ми це зробили, але іншим шляхом)
+```{r}
+sr <- mean ((f$Homicide - f$p_sr) ^ 2)
+mr <- mean ((f$Homicide - f$p_mr) ^ 2)
+pr <- mean ((f$Homicide - f$p_pr) ^ 2)
+dt <- mean ((f$Homicide - f$p_dt) ^ 2)
+rf <- mean ((f$Homicide - f$p_rf) ^ 2)
+ff_ap <- mean ((f$Homicide - f$p_ff_ap) ^ 2)
+mse <- data.frame(sr,mr,pr,dt,rf,ff_ap)
+head(mse)
+```
+```{r}
+library(reshape)
+mse1 <- reshape::melt.data.frame(mse)
+head(mse1)
+b1 <- ggplot(mse1, aes(x=variable, y=value)) +
+  geom_bar(stat="summary", fun.y="mean", fill = 'royalblue')
+b1
+
+```
+
+```{r}
+ggsave("plot.jpg", plot=b1 + theme_classic(), width=20, height=15, units="cm", dpi=600)
+```
+
+#Висновок: побудовано моделі лінійної регресії, багатофакторної регресії, поліноміальної регресії, дерево рішень, випадковий ліс, нейронної мережі. Розроблено прогноз по кожній з моделей та проведено аналіз на базі тестувальних даних.  Зазначимо, що всі моделі мають явище перенавчання. Найменше значення середньоквадратичної похибки на навчальній виборці та тестовій виборці - у моделі нейронної мережі
+
+#Явище перенавчання присутне за причиною замалої кількості спостережень. Найбільше значення коефіцієнту детермінації у моделі нейронної мережі
+
+#Аналізуючи значення коефіцієнтів детермінації робимо висновок, що модель нейронної мережі найбільш точно описує зв'зок та дає найбільш точний прогноз. Це дає підстави зробити висновки про найвищу точність прогнозу з усіх розглянутих моделей
