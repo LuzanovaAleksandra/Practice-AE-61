@@ -1,0 +1,505 @@
+---
+title: "lab4_luzanova_CLASSIFICATION"
+output:
+  word_document: default
+  html_notebook: default
+  html_document: default
+---
+#"LOGISTIC REGRESSION"
+# Download the data
+```{r}
+set.seed(123)
+f <- read.csv2('crime_index.csv', header = TRUE, encoding = 'UNICOD')
+f <- f[,-c(1,2)]
+head(f)
+```
+#Розглянемо статистику та переведемо кількісну змінну до бінарних значень, де  1 будуть приймати значення більші за середнє значення, 0 - менші за середнє значення.
+
+
+```{r}
+library (psych)
+f$cr_in<- ifelse(f$cr_in > mean(f$cr_in), 1, 0)
+head (f)
+describe(f)
+```
+#Висновок: кількість спостережень – 123, кількість змінних – 13, всі кількісні. Є пропущені значеня та викиди
+
+#Заповнимо пропущені значення - середніми значеннями
+```{r}
+f_fill <- f
+f_fill$gdp_p <- ifelse(is.na(f$gdp_p),round(mean(f$gdp_p,na.rm = TRUE)),f$gdp_p)
+f_fill$edu_ex <- ifelse(is.na(f$edu_ex),round(mean(f$edu_ex,na.rm = TRUE)),f$edu_ex)
+f_fill$mil_ex <- ifelse(is.na(f$mil_ex),round(mean(f$mil_ex,na.rm = TRUE)),f$mil_ex)
+f <- f_fill
+head(f_fill)
+describe(f)
+```
+#Пропущені значення заповнено
+
+#Замінемо значення, що приймаємо за викиди, граничними значеннями максимума та мінімума
+```{r}
+qn = quantile(f$Population, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { Population= ifelse(Population < qn[1], qn[1], Population)
+                  Population = ifelse(Population > qn[2], qn[2], Population)})
+qn = quantile(f$gdp_p, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { gdp_p= ifelse(gdp_p < qn[1], qn[1], gdp_p)
+                  gdp_p = ifelse(gdp_p > qn[2], qn[2], gdp_p)})
+qn = quantile(f$unem, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { unem = ifelse(unem < qn[1], qn[1], unem)
+                  unem = ifelse(unem > qn[2], qn[2], unem)})
+qn = quantile(f$life_ex, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { life_ex = ifelse(life_ex < qn[1], qn[1], life_ex)
+                  life_ex = ifelse(life_ex > qn[2], qn[2], life_ex)})
+qn = quantile(f$dea, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { dea= ifelse(dea < qn[1], qn[1], dea)
+                  dea = ifelse(dea > qn[2], qn[2], dea)})
+qn = quantile(f$bir, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { bir= ifelse(bir < qn[1], qn[1], bir)
+                  bir = ifelse(bir > qn[2], qn[2], bir)})
+qn = quantile(f$emp, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { emp= ifelse(emp < qn[1], qn[1], emp)
+                  emp = ifelse(emp> qn[2], qn[2], emp)})
+qn = quantile(f$emp_s, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { emp_s= ifelse(emp_s < qn[1], qn[1], emp_s)
+                  emp_s = ifelse(emp_s > qn[2], qn[2], emp_s)})
+qn = quantile(f$emp_a, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { emp_a= ifelse(emp_a < qn[1], qn[1], emp_a)
+                  emp_a = ifelse(emp_a > qn[2], qn[2], emp_a)})
+qn = quantile(f$emp_i, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { emp_i= ifelse(emp_i < qn[1], qn[1], emp_i)
+                  emp_i = ifelse(emp_i > qn[2], qn[2], emp_i)})
+qn = quantile(f$edu_ex, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { edu_ex= ifelse(edu_ex < qn[1], qn[1], edu_ex)
+                  edu_ex = ifelse(edu_ex > qn[2], qn[2], edu_ex)})
+qn = quantile(f$mil_ex, c(0.05, 0.95), na.rm = TRUE)
+f = within(f, { mil_ex= ifelse(mil_ex < qn[1], qn[1], mil_ex)
+                  mil_ex = ifelse(mil_ex > qn[2], qn[2], mil_ex)})
+
+describe(f)
+write.csv2(f, file = "crime_index_pre.csv")
+```
+
+#Позбавились викидів та пропущених значень.
+
+# Features Scaling
+```{r}
+mPopulation <- mean(f$Population)
+sPopulation <- sd(f$Population)
+f$Population <- (f$Population-mPopulation)/sPopulation
+
+mgdp_p <- mean(f$gdp_p)
+sgdp_p <- sd(f$gdp_p)
+f$gdp_p<- (f$gdp_p-mgdp_p)/sgdp_p
+
+munem <- mean(f$unem)
+sunem <- sd(f$unem)
+f$unem <- (f$unem-munem)/sunem
+
+mlife_ex <- mean(f$life_ex)
+slife_ex <- sd(f$life_ex)
+f$life_ex <- (f$life_ex-mlife_ex)/slife_ex
+
+mdea <- mean(f$dea)
+sdea <- sd(f$dea)
+f$dea<- (f$dea-mdea)/sdea
+
+mbir <- mean(f$bir)
+sbir <- sd(f$bir)
+f$bir <- (f$bir-mbir)/sbir
+
+memp <- mean(f$emp)
+semp <- sd(f$emp)
+f$emp <- (f$emp-memp)/semp
+
+memp_s <- mean(f$emp_s)
+semp_s <- sd(f$emp_s)
+f$emp_s<- (f$emp_s-memp_s)/semp_s
+
+memp_a <- mean(f$emp_a)
+semp_a <- sd(f$emp_a)
+f$emp_a <- (f$emp_a-memp_a)/semp_a
+
+memp_i <- mean(f$emp_i)
+semp_i <- sd(f$emp_i)
+f$emp_i <- (f$emp_i-memp_i)/semp_i
+
+medu_ex <- mean(f$edu_ex)
+sedu_ex <- sd(f$edu_ex)
+f$edu_ex<- (f$edu_ex-medu_ex)/sedu_ex
+
+mmil_ex <- mean(f$mil_ex)
+smil_ex <- sd(f$mil_ex)
+f$mil_ex <- (f$mil_ex-mmil_ex)/smil_ex
+
+head (f)
+```
+#Висновок: моделі класифікації вимагають попереднього шкалювання кількісних змінних. Шкалювання виконано.
+
+# Splitting the scaled dataset into the TRAIN set and TEST set
+```{r}
+set.seed(123)
+library(caTools)
+split = sample.split(f$cr_in, SplitRatio = 0.7)
+f_train_c = subset(f, split == TRUE)
+f_test_c = subset(f, split == FALSE)
+```
+#Висновок: підготований датасет розділено на навчальну та тестову вибірки. До тренувальної вибірки обрано 86 значень (70% від усіх спостережень), до тестової - 37 значення (30% від усіх спостережень)
+
+# Fitting (Benchmark model)
+```{r}
+class_lr <- glm(cr_in ~ ., f_train_c, family = binomial)
+summary(class_lr)
+```
+
+## Optimized model
+```{r}
+class_opt <- glm(cr_in ~ edu_ex + Population, f_train_c, family = binomial)
+summary(class_opt)
+```
+#обрано саме ці змінні на підставі аналізу двофакторної моделі. Саме ці дві змінні дають найбільш гарний результат
+
+# Predicting
+```{r}
+p <- predict(class_opt, f_test_c[, c("edu_ex","Population" )], type = 'response')
+y <- ifelse(p > 0.7, 1, 0)
+```
+#Висновок: розраховані ймовірності віднесення об’єктів до кожного з двох класів (вектор р), визначені класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y > 0.7)
+print(cm)
+```
+#Висновок: точність моделі - (17 + 4) / 37 = 56.8 %, частка невірно класифікованих випадків – (14 + 2) / 37 = 43,2 %. Чутливість моделі – 4 / (4 + 14) = 22.2 %, специфічність – 17 / (17 + 2) = 89.5 %, тобто модель більш чутлива до виявлення позитивних випадків. У цьому разі – "країн", з високим рівнем злочинності.
+
+## ROC
+```{r}
+library(ROCR)
+pref <- prediction(p, f_test_c$cr_in)
+perf <- performance(pref, "tpr", "fpr")
+plot(perf)
+```
+
+#Висновок: співвідношення істинно-позитивних і хибно-позитивних випадків свідчить про відносно погану якість моделі.
+
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+prob_set = predict(class_opt, grid_set, type = 'response')
+y_grid = ifelse(prob_set > 0.7, 1, 0)
+plot(set[, -3],
+     main = 'Logistic Regression',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує лінійний варіант розділяючої кривої.
+
+#"K-Nearest Neighbors (K-NN)"
+
+# Fitting & predicting
+```{r}
+library(class)
+y = knn(train = f_train_c[,c('edu_ex','Population')],
+        test = f_test_c[,c('edu_ex','Population')],
+        cl = f_train_c[, 'cr_in'],
+        k = 5,
+        prob = TRUE)
+```
+#Висновок: і навчання, і прогнозування за моделлю k найближчих сусідів здійснюється однією функцією. У результаті отримуємо вектор класів об’єктів.
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y == '1')
+print(cm)
+```
+#Висновок: точність моделі – (11+13) / 37 = 64.9 %, частка невірно класифікованих випадків – (5+8) / 37 = 35.1 %. Чутливість – 13 / (13+5) = 72.2 %, специфічність – 11 / (11+8) = 57,9 %, тобто модель більш чутлива до виявлення позитивних випадків. У цьому разі – "країн", з високим рівнем злочинності
+
+## Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+y_grid = knn(train = f_train_c[,c('edu_ex','Population')], test = grid_set, cl = f_train_c[, 'cr_in'], k = 5)
+plot(set[, -3],
+     main = 'KNN',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує нелінійний варіант розділяючої кривої.
+
+#"Support Vector Machine (SVM)"
+
+# Fitting SVM model
+```{r}
+library(e1071)
+class_svm_l = svm(cr_in ~ edu_ex + Population, data = f_train_c, kernel = 'linear')
+summary(class_svm_l)
+```
+
+# Predicting
+```{r}
+p <- predict(class_svm_l, f_test_c[, c('edu_ex','Population')])
+y <- ifelse(p > 0.5, 1, 0)
+```
+#Висновок: визначено класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y)
+print(cm)
+```
+#Висновок: точність моделі - (18 + 2) / 37 = 54.1 %, частка невірно класифікованих випадків – (16 + 1) / 37 = 45,9 %. Чутливість моделі – 2 / (16 + 2) = 11.1 %, специфічність – 18 / (18 + 1) = 94,7 %, тобто модель більш чутлива до виявлення негативних випадків. У цьому разі – "країн", з низьким рівнем злочинності
+
+# Visualising the Test set results
+```{r}
+xgrid = expand.grid(edu_ex = f_test_c$edu_ex, Population = f_test_c$Population)
+ygrid = predict(class_svm_l, xgrid)
+#Finally, you plot the points and color them according to the decision boundary. You can see that the decision boundary is linear. You can put the data points in the plot as well to see where they lie.
+plot(xgrid, col = as.numeric(y_grid), pch = 10, cex = .9) 
+points(f_test_c[, c('edu_ex','Population')], col = as.factor(f_test_c$cr_in), pch = 19)
+```
+
+# Fitting RBF-kernel model
+```{r}
+library(e1071)
+class_svm_r = svm(cr_in ~ edu_ex + Population, data = f_train_c, kernel = 'radial')
+summary(class_svm_r)
+```
+
+# Predicting
+```{r}
+p <- predict(class_svm_r, f_test_c[, c('edu_ex','Population')])
+y <- ifelse(p > 0.5, 1, 0)
+```
+#Висновок: визначені класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y)
+print(cm)
+```
+#Висновок: точність моделі - (16 + 8) / 37 = 64.9 %, частка невірно класифікованих випадків – (10 + 3) / 37 = 35,1 %. Чутливість моделі – 8 / (8 + 10) = 44.4 %, специфічність – 16 / (16 + 8) = 66.7 %, тобто модель більш чутлива до виявлення негативних випадків. У цьому разі – "країн", з низьким рівнем злочинності
+
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+p_grid = predict(class_svm_r, grid_set)
+y_grid <- ifelse(p_grid > 0.5, 1, 0)
+plot(set[, -3],
+     main = 'SVM',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує нелінійний варіант розділяючої кривої. 
+
+#"Naive Bayes"
+# Fitting 
+```{r}
+library(e1071)
+f_train_c$cr_in <- as.factor(f_train_c$cr_in)
+f_test_c$cr_in <- as.factor(f_test_c$cr_in)
+class_nb = naiveBayes(cr_in ~ edu_ex + Population, data = f_train_c)
+```
+#Висновок: для навчання моделі використано функцію naiveBayes.
+
+# Predicting
+```{r}
+y <- predict(class_nb, f_test_c[, c('edu_ex','Population')])
+```
+#Висновок: визначено класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y) 
+print(cm)
+```
+#Висновок: точність моделі - (17 + 4) / 37 = 56.8 %, частка невірно класифікованих випадків – (14 + 2) / 37 = 43,2 %. Чутливість моделі – 4 / (4 + 14) = 22.2 %, специфічність – 17 / (17 + 2) = 89.5 %, тобто модель більш чутлива до виявлення пнегативних випадків. У цьому разі – "країн", з низьким рівнем злочинності
+
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+y_grid = predict(class_nb, grid_set)
+plot(set[, -3],
+     main = 'Naive Bayes',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує нелінійний варіант розділяючої кривої.
+
+#"Classification Tree"
+
+# Fitting 
+```{r}
+library(rpart)
+f_train_c$cr_in <- as.factor(f_train_c$cr_in)
+f_test_c$cr_in <- as.factor(f_test_c$cr_in)
+class_dt = rpart(cr_in ~ ., data = f_train_c)
+```
+
+## Predicting
+```{r}
+y <- predict(class_dt, f_test_c[-14], type = 'class')
+```
+#Висновок: визначені класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y)
+print(cm)
+```
+#Висновок: точність моделі – (14+14) / 37 = 75.7 %, частка невірно класифікованих випадків – (4+5) / 37 = 24.3 %. Чутливість – 14 / (14+4) = 77.8 %, специфічність – 14 / (14+5) = 73.7 %, тобто модель більш чутлива до виявлення позитивних випадків. У цьому разі – "країн", з високим рівнем злочинносі
+
+# Plotting the tree
+```{r}
+plot(class_dt)
+text(class_dt)
+```
+#для аналізу необхідно перейти від шкальованих даних до реальних
+
+
+# Fitting 2 factors
+```{r}
+class_ct = rpart(cr_in ~ edu_ex + Population, data = f_train_c)
+```
+
+## Predicting
+```{r}
+y <- predict(class_ct, f_test_c[, c('edu_ex', 'Population')], type = 'class')
+```
+#Висновок: визначено класи об’єктів (вектор у). Для цього використано параметр type = ‘class’.
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y)
+print(cm)
+```
+#Висновок: точність моделі – (13+11) / 37 = 64.9 %, частка невірно класифікованих випадків – (7+6) / 37 = 35.1 %. Чутливість – 11 / (11+7) = 61.1 %, специфічність – 13/ (13+6) = 68.4 %, тобто модель більш чутлива до виявлення негативних випадків. У цьому разі – "країн", з низьким рівнем злочинності
+
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+y_grid = predict(class_ct, grid_set, type = 'class')
+plot(set[, -3],
+     main = 'Classification Tree',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує нелінійний варіант розділяючої кривої.
+
+# Fitting Random Forest Classification to the Training set
+```{r}
+library(randomForest)
+set.seed(123)
+class_rf = randomForest(cr_in ~ edu_ex + Population, data = f_train_c, ntree = 10)
+```
+
+
+## Predicting
+```{r}
+y <- predict(class_rf, f_test_c[, c('edu_ex','Population')])
+```
+#Висновок: визначені класи об’єктів (вектор у).
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], y)
+print(cm)
+```
+#Висновок: точність моделі – (13+13) / 37 = 70.3 %, частка невірно класифікованих випадків – (5+6) / 37 = 29.7 %. Чутливість – 13 / (13+5) = 72.2 %, специфічність – 13 / (13+6) = 69,4 %, тобто модель більш чутлива до виявлення позитивних випадків. У цьому разі – "країн", з високим рівнем злочинності
+
+# Visualising the Test set results
+```{r}
+set = f_test_c[,c('edu_ex','Population','cr_in')]
+X1 = seq(min(set['edu_ex']) - 1, max(set['edu_ex']) + 1, by = 0.01)
+X2 = seq(min(set['Population']) - 1, max(set['Population']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('edu_ex', 'Population')
+y_grid = predict(class_rf, grid_set)
+plot(set[, -3],
+     main = 'Random Forest',
+     xlab = 'edu_ex', ylab = 'Population',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+```
+#Висновок: на графіку червоним позначені "країни" з високим рівнем злочинності, зеленим – з низьким рівнем злочинності.Червоним виділена зона високої ймовірності високого значення рівня злочинності. Модель описує нелінійний варіант розділяючої кривої.
+
+#"NEUORAL NETWORKS FOR CLASSIFICATION"
+
+```{r}
+library(neuralnet)
+# fit neural network
+nn = neuralnet(cr_in ~ edu_ex + Population, f_train_c, hidden = 3, linear.output = T)
+# plot neural network
+plot(nn)
+```
+#Висновок: на основі змінних edu_ex,Population побудовано двошарову нейронну мережу для прогнозування классу.
+
+# Fitting the NN
+```{r}
+library(nnet)
+set.seed(11)
+ff_cl <- nnet(data = f_train_c, cr_in ~ edu_ex + Population, size = 3, maxit = 1000)
+library(graphics)
+source(file = 'plot.nnet.R')
+plot.nnet(ff_cl)
+```
+
+## Predicting
+```{r}
+#p_nn_cl <- predict(nn, f_test_c)
+#p <- (p > 0.5)
+#p <- as.factor(p_ff_cl)
+p_ff_cl <- predict(ff_cl, f_test_c, type = "class") 
+p <- as.factor(p_ff_cl)
+```
+
+#### Висновок: визначені класи об'єктів (вектор p)
+
+## Confusion Matrix
+```{r}
+cm = table(f_test_c[, 'cr_in'], p)
+print(cm)
+```
+#Висновок: точність моделі – (16+8) / 37 = 64.9 %, частка невірно класифікованих випадків – (10+3) / 37 = 35.1 %. Чутливість – 8 / (10+8) = 44.4 %, специфічність – 16 / (16+3) = 84.2 %, тобто модель більш чутлива до виявлення негативних випадків. У цьому разі – "країн", з низьким рівнем злочинності
+
+#Отже, проведено класифікацію різними методами, серед яких: Logistic Regression, KNN, SVM, Naive Bayes, Classification Tree, Random Forest. За методом Classification Tree найменша кількість невірно віднесених значень - 9, при вибірці у 37 спостережень. Висновки по методу Classification Tree:  тточність моделі – (14+14) / 37 = 75.7 %, частка невірно класифікованих випадків – (4+5) / 37 = 24.3 %. Чутливість – 14 / (14+4) = 77.8 %, специфічність – 14 / (14+5) = 73.7 %, тобто модель більш чутлива до виявлення позитивних випадків. У цьому разі – "країн", з високим рівнем злочинносі
